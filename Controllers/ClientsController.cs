@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using API_Client.Services;
+using System.Text.Json;
 
 namespace API_Client.Controllers
 {
@@ -14,12 +15,12 @@ namespace API_Client.Controllers
     public class ClientsController : ControllerBase
     {
         private readonly ClientsContext _context;
-        private readonly CommandeService _commandeService;
+        private readonly ClientService _clientService;
 
-        public ClientsController(ClientsContext context, CommandeService commandeService)
+        public ClientsController(ClientsContext context, ClientService clientService)
         {
             _context = context;
-            _commandeService = commandeService;
+            _clientService = clientService;
         }
 
         // GET: api/customers
@@ -65,17 +66,73 @@ namespace API_Client.Controllers
             }
 
             // Appeler l'API_Commande pour récupérer les commandes liées à ce client
-            var response = await _commandeService.GetOrdersByClientId(id); // Utilisez 'await' ici
+            var response = await _clientService.GetOrdersByClientId(id); // Utilisez 'await' ici
             if (response == null)
             {
                 return NotFound(new { message = "Aucune commande trouvée pour ce client." });
             }
-
+            var res = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(response);
             // Retourner le client avec ses commandes
             return Ok(new
             {
                 Client = client,
-                Commandes = response
+                Commandes = res
+            });
+        }
+
+
+        // GET: api/clients/{id}/commandes
+        [HttpGet("{clientId}/commandes/{commandeId}")]
+        public async Task<IActionResult> GetOrderByClient(int clientId,int commandeId)
+        {
+            // Récupérer le client
+            var client = await _context.Customers.FindAsync(clientId);
+            if (client == null)
+            {
+                return NotFound(new { message = "Client non trouvé." });
+            }
+
+            // Appeler l'API_Commande pour récupérer les commandes liées à ce client
+            var response = await _clientService.GetOrderByClient(clientId, commandeId); // Utilisez 'await' ici
+            if (response == null)
+            {
+                return NotFound(new { message = "Aucune commande trouvée pour ce client." });
+            }
+            var res = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(response);
+            // Retourner le client avec ses commandes
+            return Ok(new
+            {
+                Client = client,
+                Commandes = res
+            });
+        }
+
+        // GET: api/clients/{id}/commandes
+        [HttpGet("{clientId}/commandes/{commandeId}/details")]
+        public async Task<IActionResult> GetOrderByClientWithProduit(int clientId, int commandeId)
+        {
+            // Récupérer le client
+            var client = await _context.Customers.FindAsync(clientId);
+            if (client == null)
+            {
+                return NotFound(new { message = "Client non trouvé." });
+            }
+
+            // Appeler l'API_Commande pour récupérer les commandes liées à ce client
+            Console.WriteLine(clientId);
+            Console.WriteLine(commandeId);
+            Console.WriteLine(client);  
+            var response = await _clientService.GetOrderByClientWithProduit(clientId, commandeId); // Utilisez 'await' ici
+            if (response == null)
+            {
+                return NotFound(new { message = "Aucune commande trouvée pour ce client." });
+            }
+            var res = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(response);
+            // Retourner le client avec ses commandes
+            return Ok(new
+            {
+                Client = client,
+                Commandes = res
             });
         }
 

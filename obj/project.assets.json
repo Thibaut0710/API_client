@@ -979,7 +979,6 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
-          "API_Produit": "1.0.0",
           "Microsoft.EntityFrameworkCore": "8.0.7",
           "Pomelo.EntityFrameworkCore.MySql": "8.0.2",
           "RabbitMQ.Client": "6.8.1",
@@ -990,24 +989,6 @@
         },
         "runtime": {
           "bin/placeholder/API_Commande.dll": {}
-        },
-        "frameworkReferences": [
-          "Microsoft.AspNetCore.App"
-        ]
-      },
-      "API_Produit/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v8.0",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore": "8.0.7",
-          "Pomelo.EntityFrameworkCore.MySql": "8.0.2",
-          "Swashbuckle.AspNetCore": "6.4.0"
-        },
-        "compile": {
-          "bin/placeholder/API_Produit.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/API_Produit.dll": {}
         },
         "frameworkReferences": [
           "Microsoft.AspNetCore.App"
@@ -2784,11 +2765,6 @@
       "type": "project",
       "path": "../API_Commande/API_Commande.csproj",
       "msbuildProject": "../API_Commande/API_Commande.csproj"
-    },
-    "API_Produit/1.0.0": {
-      "type": "project",
-      "path": "../API_produit/API_Produit.csproj",
-      "msbuildProject": "../API_produit/API_Produit.csproj"
     }
   },
   "projectFileDependencyGroups": {

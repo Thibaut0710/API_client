@@ -570,6 +570,7 @@
         "dependencies": {
           "Microsoft.EntityFrameworkCore": "8.0.7",
           "Pomelo.EntityFrameworkCore.MySql": "8.0.2",
+          "RabbitMQ.Client": "6.8.1",
           "Swashbuckle.AspNetCore": "6.4.0"
         },
         "runtime": {
