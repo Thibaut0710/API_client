@@ -20,16 +20,25 @@ namespace API_Client.Services
         // Appeler l'API_Commande pour récupérer les commandes liées à un client
         public async Task<string> GetOrdersByClientId(int clientId)
         {
-            Console.WriteLine(clientId);
-            //var response = await _httpClient.GetAsync($"Commande/client/{clientId}");
-            string jsonString = JsonSerializer.Serialize(new { Id = clientId });
-            var response = await _rabbitMQService.SendMessageAndWaitForResponseAsync(jsonString);
-            if (response == null)
+            try
             {
-                return "Aucune commande trouvée pour ce client.";
+                // Utiliser RabbitMQ pour récupérer les commandes liées à ce client
+                string jsonString = JsonSerializer.Serialize(new { Id = clientId });
+                var response = await _rabbitMQService.SendMessageAndWaitForResponseAsync(jsonString);
+                if (response == null)
+                {
+                    return null;
+                }
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                // Gérer les erreurs et retourner un message d'erreur
+                return $"Erreur lors de la récupération des commandes : {ex.Message}";
             }
 
-            return response;
+
             /*Console.WriteLine(response);
 
             if (!response.IsSuccessStatusCode)

@@ -1,11 +1,11 @@
 ﻿using API_Client.Context;
 using API_Client.Models;
+using API_Client.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using API_Client.Services;
 
 namespace API_Client.Controllers
 {
@@ -22,31 +22,41 @@ namespace API_Client.Controllers
             _commandeService = commandeService;
         }
 
-        // GET: api/customers
+        // GET: api/clients
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Clients>>> GetCustomers()
         {
-            return await _context.Customers.ToListAsync();
+            return await _context.Customers.AsNoTracking().ToListAsync();
         }
 
-        // GET: api/customers/{id}
+        // GET: api/clients/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<Clients>> GetCustomer(int id)
         {
-            var customer = await _context.Customers.FindAsync(id);
+            var customer = await _context.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
 
             if (customer == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Client non trouvé." });
             }
 
-            return customer;
+            return Ok(customer);
         }
 
-        // POST: api/customers
+        // POST: api/clients
         [HttpPost]
-        public async Task<ActionResult<Clients>> PostCustomer(Clients customer)
+        public async Task<ActionResult<Clients>> PostCustomer([FromBody] Clients customer)
         {
+            if (customer == null)
+            {
+                return BadRequest(new { message = "Les informations du client ne peuvent pas être nulles." });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             _context.Customers.Add(customer);
             await _context.SaveChangesAsync();
 
@@ -57,36 +67,44 @@ namespace API_Client.Controllers
         [HttpGet("{id}/commandes")]
         public async Task<IActionResult> GetClientWithOrders(int id)
         {
-            // Récupérer le client
-            var client = await _context.Customers.FindAsync(id);
+            var client = await _context.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
             if (client == null)
             {
                 return NotFound(new { message = "Client non trouvé." });
             }
 
-            // Appeler l'API_Commande pour récupérer les commandes liées à ce client
-            var response = await _commandeService.GetOrdersByClientId(id); // Utilisez 'await' ici
-            if (response == null)
+            try
             {
-                return NotFound(new { message = "Aucune commande trouvée pour ce client." });
-            }
+                var response = await _commandeService.GetOrdersByClientId(id);
+                if (string.IsNullOrEmpty(response))
+                {
+                    return NotFound(new { message = "Aucune commande trouvée pour ce client." });
+                }
 
-            // Retourner le client avec ses commandes
-            return Ok(new
+                return Ok(new
+                {
+                    Client = client,
+                    Commandes = response
+                });
+            }
+            catch (Exception ex)
             {
-                Client = client,
-                Commandes = response
-            });
+                return StatusCode(500, new { message = "Erreur lors de la récupération des commandes.", detail = ex.Message });
+            }
         }
 
-
-        // PUT: api/customers/{id}
+        // PUT: api/clients/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutCustomer(int id, Clients customer)
+        public async Task<IActionResult> PutCustomer(int id, [FromBody] Clients customer)
         {
             if (id != customer.Id)
             {
-                return BadRequest();
+                return BadRequest(new { message = "L'ID du client ne correspond pas à l'ID dans l'URL." });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
             }
 
             _context.Entry(customer).State = EntityState.Modified;
@@ -99,29 +117,40 @@ namespace API_Client.Controllers
             {
                 if (!CustomerExists(id))
                 {
-                    return NotFound();
+                    return NotFound(new { message = "Client non trouvé." });
                 }
                 else
                 {
                     throw;
                 }
             }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Erreur lors de la mise à jour du client.", detail = ex.Message });
+            }
 
             return Ok(new { message = "Client mis à jour avec succès." });
         }
 
-        // DELETE: api/customers/{id}
+        // DELETE: api/clients/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCustomer(int id)
         {
             var customer = await _context.Customers.FindAsync(id);
             if (customer == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Client non trouvé." });
             }
 
             _context.Customers.Remove(customer);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Erreur lors de la suppression du client.", detail = ex.Message });
+            }
 
             return Ok(new { message = "Client supprimé avec succès." });
         }
