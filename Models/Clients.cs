@@ -8,4 +8,12 @@
         public string Phone { get; set; }
         public List<int> CommandeIds { get; set; }
     }
+    public class ClientIdModel
+    {
+        public int Id { get; set; }
+        public ClientIdModel(int id)
+        {
+            Id = id;
+        }
+    }
 }

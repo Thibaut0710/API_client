@@ -14,11 +14,6 @@ public class RabbitMQService : IRabbitMQService
     private static ConcurrentDictionary<string, TaskCompletionSource<string>> _pendingMessages = new ConcurrentDictionary<string, TaskCompletionSource<string>>();
     private readonly IConnection _connection;
     private readonly IModel _channel;
-    private readonly EventingBasicConsumer _consumer;
-
-    // Noms de queue en dur
-    private const string CommandQueueName = "Channel_Commande";
-    private const string ReplyQueueName = "Channel_Client";
 
     public RabbitMQService(IConfiguration configuration)
     {
@@ -29,22 +24,22 @@ public class RabbitMQService : IRabbitMQService
         var factory = new ConnectionFactory() { HostName = _hostName, UserName = _userName, Password = _password };
         _connection = factory.CreateConnection();
         _channel = _connection.CreateModel();
-
-        // Déclarez la queue pour recevoir les réponses (réponses RPC) en utilisant une queue fixe
-        _channel.QueueDeclare(queue: ReplyQueueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
-        _consumer = new EventingBasicConsumer(_channel);
-        _consumer.Received += OnResponseReceived;
-
-        // Commencez à consommer les messages sur la queue de réponse
-        _channel.BasicConsume(consumer: _consumer, queue: ReplyQueueName, autoAck: true);
     }
 
-    public async Task<string> SendMessageAndWaitForResponseAsync(string message)
+    public async Task<string> SendMessageAndWaitForResponseAsync(string message, string CommandQueueName, string ReplyQueueName)
     {
+        _channel.QueueDeclare(queue: ReplyQueueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
+        await Task.Delay(100);
+
+        var consumer = new EventingBasicConsumer(_channel);
+        consumer.Received += OnResponseReceived;
+        _channel.BasicConsume(consumer: consumer, queue: ReplyQueueName, autoAck: true);
+        Console.WriteLine(ReplyQueueName);
+
+
         var correlationId = Guid.NewGuid().ToString();
         var tcs = new TaskCompletionSource<string>();
 
-        // Ajouter la tâche à la liste des messages en attente
         _pendingMessages[correlationId] = tcs;
 
         var properties = _channel.CreateBasicProperties();
@@ -52,7 +47,7 @@ public class RabbitMQService : IRabbitMQService
         properties.ReplyTo = ReplyQueueName;
 
         var body = Encoding.UTF8.GetBytes(message);
-
+        Console.WriteLine(CommandQueueName);
         _channel.BasicPublish(exchange: string.Empty,
                              routingKey: CommandQueueName, // Utilisation de la queue de commande en dur
                              basicProperties: properties,

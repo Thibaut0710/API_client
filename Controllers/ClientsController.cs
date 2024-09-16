@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace API_Client.Controllers
@@ -14,12 +15,12 @@ namespace API_Client.Controllers
     public class ClientsController : ControllerBase
     {
         private readonly ClientsContext _context;
-        private readonly CommandeService _commandeService;
+        private readonly ClientService _clientService;
 
-        public ClientsController(ClientsContext context, CommandeService commandeService)
+        public ClientsController(ClientsContext context, ClientService clientService)
         {
             _context = context;
-            _commandeService = commandeService;
+            _clientService = clientService;
         }
 
         // GET: api/clients
@@ -62,37 +63,59 @@ namespace API_Client.Controllers
 
             return CreatedAtAction(nameof(GetCustomer), new { id = customer.Id }, customer);
         }
-
         // GET: api/clients/{id}/commandes
         [HttpGet("{id}/commandes")]
         public async Task<IActionResult> GetClientWithOrders(int id)
         {
-            var client = await _context.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+            // Récupérer le client
+            var client = await _context.Customers.FindAsync(id);
             if (client == null)
             {
                 return NotFound(new { message = "Client non trouvé." });
             }
 
-            try
+            // Appeler l'API_Commande pour récupérer les commandes liées à ce client
+            var response = await _clientService.GetOrdersByClientId(id); // Utilisez 'await' ici
+            if (response == null)
             {
-                var response = await _commandeService.GetOrdersByClientId(id);
-                if (string.IsNullOrEmpty(response))
-                {
-                    return NotFound(new { message = "Aucune commande trouvée pour ce client." });
-                }
-
-                return Ok(new
-                {
-                    Client = client,
-                    Commandes = response
-                });
+                return NotFound(new { message = "Aucune commande trouvée pour ce client." });
             }
-            catch (Exception ex)
+            var res = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(response);
+            // Retourner le client avec ses commandes
+            return Ok(new
             {
-                return StatusCode(500, new { message = "Erreur lors de la récupération des commandes.", detail = ex.Message });
-            }
+                Client = client,
+                Commandes = res
+            });
         }
+        // GET: api/clients/{id}/commandes
+        [HttpGet("{clientId}/commandes/{commandeId}/details")]
+        public async Task<IActionResult> GetOrderByClientWithProduit(int clientId, int commandeId)
+        {
+            // Récupérer le client
+            var client = await _context.Customers.FindAsync(clientId);
+            if (client == null)
+            {
+                return NotFound(new { message = "Client non trouvé." });
+            }
 
+            // Appeler l'API_Commande pour récupérer les commandes liées à ce client
+            Console.WriteLine(clientId);
+            Console.WriteLine(commandeId);
+            Console.WriteLine(client);
+            var response = await _clientService.GetOrderByClientWithProduit(clientId, commandeId); // Utilisez 'await' ici
+            if (response == null)
+            {
+                return NotFound(new { message = "Aucune commande trouvée pour ce client." });
+            }
+            var res = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(response);
+            // Retourner le client avec ses commandes
+            return Ok(new
+            {
+                Client = client,
+                Commandes = res
+            });
+        }
         // PUT: api/clients/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCustomer(int id, [FromBody] Clients customer)
