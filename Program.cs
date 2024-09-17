@@ -27,30 +27,29 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Configuration du service HttpClient
-builder.Services.AddHttpClient<ClientService>(client =>
-{
-    client.BaseAddress = new Uri("https://localhost:7118/api/");
-});
-
 // Configuration CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy",
-        policy => policy.WithOrigins("http://localhost:5203")  // URL de l'API client
+        policy => policy.WithOrigins("https://0.0.0.0:7296")  // URL de l'API client
         .AllowAnyMethod()
         .AllowAnyHeader());
 });
 
 // Configuration du DbContext pour MySQL
 builder.Services.AddDbContext<ClientsContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
-    new MySqlServerVersion(new Version(8, 0, 26))));
+    options.UseMySql(
+            builder.Configuration.GetConnectionString("DefaultConnection"),
+            new MariaDbServerVersion(new Version(10, 11, 6)),
+            optionsBuilder => optionsBuilder.EnableRetryOnFailure()
+        )
+    );
 
 builder.Services.AddControllers();
+builder.Services.AddScoped<ClientService>();
 builder.Services.AddSingleton<IRabbitMQService, RabbitMQService>();
 builder.Services.AddSingleton<RabbitMQConsumer>();
-
+builder.WebHost.UseUrls("https://0.0.0.0:7296");
 // Configuration de Swagger pour la documentation de l'API
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
