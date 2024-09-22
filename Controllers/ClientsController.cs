@@ -1,6 +1,7 @@
 ﻿using API_Client.Context;
 using API_Client.Models;
 using API_Client.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
@@ -12,6 +13,7 @@ namespace API_Client.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ClientsController : ControllerBase
     {
         private readonly ClientsContext _context;
