@@ -134,7 +134,7 @@ jobs:
       - name: Download Docker image artifact
         uses: actions/download-artifact@v4
         with:
-          name: api-produit-docker-image
+          name: api-client-docker-image
           path: ./
 
       - name: Generate dynamic tag name
