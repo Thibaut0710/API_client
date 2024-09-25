@@ -29,7 +29,12 @@ namespace API_Client.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Clients>>> GetCustomers()
         {
-            return await _context.Customers.AsNoTracking().ToListAsync();
+            var customers = await _context.Customers.AsNoTracking().ToListAsync();
+            if (customers == null || !customers.Any())
+            {
+                return NotFound();
+            }
+            return Ok(customers);
         }
 
         // GET: api/clients/{id}
